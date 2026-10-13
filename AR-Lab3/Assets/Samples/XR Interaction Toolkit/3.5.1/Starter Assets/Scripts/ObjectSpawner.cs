@@ -152,6 +152,45 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         /// <seealso cref="TrySpawnObject"/>
         public event Action<GameObject> objectSpawned;
 
+        [SerializeField]
+        [Tooltip("Включить проверку на пересечение с другими объектами при спавне.")]
+        bool m_EnableIntersectionCheck = true;
+
+        /// <summary>
+        /// Включить проверку на пересечение с другими объектами при спавне.
+        /// </summary>
+        public bool enableIntersectionCheck
+        {
+            get => m_EnableIntersectionCheck;
+            set => m_EnableIntersectionCheck = value;
+        }
+
+        [SerializeField]
+        [Tooltip("Радиус проверки вокруг точки спавна. Подберите под размер вашего объекта (например, 0.3 - 0.5).")]
+        float m_CheckRadius = 0.5f;
+
+        /// <summary>
+        /// Радиус проверки вокруг точки спавна.
+        /// </summary>
+        public float checkRadius
+        {
+            get => m_CheckRadius;
+            set => m_CheckRadius = value;
+        }
+
+        [SerializeField]
+        [Tooltip("Слой (Layer), на котором находятся уже размещенные объекты.")]
+        LayerMask m_PlacedObjectLayer;
+
+        /// <summary>
+        /// Слой для проверки пересечений.
+        /// </summary>
+        public LayerMask placedObjectLayer
+        {
+            get => m_PlacedObjectLayer;
+            set => m_PlacedObjectLayer = value;
+        }
+
         /// <summary>
         /// See <see cref="MonoBehaviour"/>.
         /// </summary>
@@ -219,6 +258,18 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
                     return false;
                 }
             }
+
+            // --- НОВАЯ ЛОГИКА: ЗАПРЕТ ПЕРЕСЕЧЕНИЯ ---
+            if (m_EnableIntersectionCheck)
+            {
+                // Проверяем, есть ли коллайдеры на указанном слое в заданном радиусе от точки спавна
+                if (Physics.CheckSphere(spawnPoint, m_CheckRadius, m_PlacedObjectLayer))
+                {
+                    Debug.LogWarning("Невозможно разместить объект: пересечение с другим объектом!", this);
+                    return false; // Прерываем спавн, сообщаем, что он не удался
+                }
+            }
+            // ------------------------------------------
 
             var objectIndex = isSpawnOptionRandomized ? Random.Range(0, m_ObjectPrefabs.Count) : m_SpawnOptionIndex;
             var newObject = Instantiate(m_ObjectPrefabs[objectIndex]);
